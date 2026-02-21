@@ -1,0 +1,22 @@
+{
+  "918601134626@c.us": {
+    "sent": 2,
+    "delivered": true,
+    "read": false,
+    "replied": false,
+    "clicked": false,
+    "score": 0,
+    "level": "COLD",
+    "lastReply": null
+  },
+  "918917437033@c.us": {
+    "sent": 2,
+    "delivered": false,
+    "read": false,
+    "replied": false,
+    "clicked": false,
+    "score": 0,
+    "level": "COLD",
+    "lastReply": null
+  }
+}
