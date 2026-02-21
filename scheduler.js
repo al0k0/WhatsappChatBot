@@ -34,8 +34,8 @@ if (s.optOut === true) continue;
       if (now - s.lastSent < 60000) continue;
 
       try {
-const id = Math.random().toString(36).substring(2, 7);
-clickMap[id] = user;
+// const id = Math.random().toString(36).substring(2, 7);
+// clickMap[id] = user;
         const caption = `
 ⏰ *Admissions closing soon*
 
@@ -47,7 +47,7 @@ You showed interest in *${s.course || "our career-focused programs"}*.
 📅 Seats are filling fast.
 
 🟢 *Apply Now:*  
-https://charter-temp.vercel.app/apply
+https://whatsappchatbot-81iy.onrender.com/a/${phone}
 
 📞 Need guidance?  
 +91XXXXXXXXXX

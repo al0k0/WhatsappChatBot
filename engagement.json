@@ -1,22 +1,22 @@
 {
   "918601134626@c.us": {
-    "sent": 2,
+    "sent": 1,
     "delivered": true,
     "read": false,
-    "replied": false,
+    "replied": true,
     "clicked": false,
-    "score": 0,
-    "level": "COLD",
-    "lastReply": null
+    "score": 25,
+    "level": "🙂 WARM",
+    "lastReply": "2026-02-21T08:17:06.928Z"
   },
   "918917437033@c.us": {
-    "sent": 2,
-    "delivered": false,
-    "read": false,
-    "replied": false,
+    "sent": 0,
+    "delivered": true,
+    "read": true,
+    "replied": true,
     "clicked": false,
-    "score": 0,
-    "level": "COLD",
-    "lastReply": null
+    "score": 75,
+    "level": "🔥 HOT",
+    "lastReply": "2026-02-21T08:37:55.616Z"
   }
 }

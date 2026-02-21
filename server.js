@@ -4,7 +4,6 @@ require("dotenv").config();
 const express = require("express");
 const app = express();
 
-const mongoose = require("mongoose");
 const client = require("./bot");
 
 const tracker = require("./services/engagementTracker");
@@ -17,15 +16,12 @@ const trackStatus = require("./tracker");
 const startReminder = require("./scheduler");
 
 
-const clickMap = require("./services/clickMap");
+// =============================
+// 🌐 WEBSITE VISIT TRACKING
+// =============================
+app.get("/w/:phone", (req, res) => {
 
-// 🌐 WEBSITE VISIT
-app.get("/w/:id", (req, res) => {
-
-  const id = req.params.id;
-  const phone = clickMap[id];
-
-  if (!phone) return res.send("Invalid link");
+  const phone = req.params.phone;
 
   console.log("🌐 Website click:", phone);
 
@@ -35,13 +31,12 @@ app.get("/w/:id", (req, res) => {
 });
 
 
-// 🎓 APPLY LINK
-app.get("/a/:id", (req, res) => {
+// =============================
+// 🎓 APPLY TRACKING
+// =============================
+app.get("/a/:phone", (req, res) => {
 
-  const id = req.params.id;
-  const phone = clickMap[id];
-
-  if (!phone) return res.send("Invalid link");
+  const phone = req.params.phone;
 
   console.log("🎓 Apply click:", phone);
 
@@ -50,47 +45,42 @@ app.get("/a/:id", (req, res) => {
   res.redirect("https://charter-temp.vercel.app/apply");
 });
 
+
 // =============================
-// OPTIONAL DATABASE CONNECTION
+// OPTIONAL ROOT CHECK
 // =============================
-
-async function connectDB() {
-  try {
-    await mongoose.connect(process.env.MONGO_URI);
-    console.log("✅ MongoDB Connected");
-  } catch {
-    console.log("⚠ Running without database...");
-  }
-}
+app.get("/", (req, res) => {
+  res.send("✅ Bot tracking server running");
+});
 
 
+// =============================
+// START SERVER LOGIC
+// =============================
 async function startServer() {
 
-  // await connectDB(); // optional
-
-  // WhatsApp ready
   client.on("ready", async () => {
 
     console.log("✅ Bot Ready");
 
-    trackStatus(client);   // delivered & read tracking
-    startReminder();       // follow-up reminders
+    trackStatus(client);
+    startReminder();
 
     console.log("🚀 Starting campaign...");
-    sendBulk();            // send bulk intro messages
-
-    // auto check leads 
-    setInterval(() => {
-    console.log("🔍 Checking new leads...");
     sendBulk();
-  }, 60000);   // every 3 minutes
+
+    // check new leads every 3 minutes
+    setInterval(() => {
+      console.log("🔍 Checking new leads...");
+      sendBulk();
+    }, 180000);
+
   });
 
 
   // =============================
   // 📩 INCOMING MESSAGES
   // =============================
-
   client.on("message", async msg => {
 
     if (msg.fromMe) return;
@@ -101,17 +91,17 @@ async function startServer() {
     let intentRaw = await detectIntent(text);
     let intent = String(intentRaw || "OTHER").toUpperCase();
 
-    // keyword fallback
-    if (/admission|enroll|apply|join|fees|registration/i.test(text)) {
+    // fallback keywords
+    if (/admission|apply|join|fees|enroll/i.test(text)) {
       intent = "ADMISSION";
     }
 
-    // ❌ NEGATIVE INTENT (stop reminders)
+    // ❌ NEGATIVE → stop reminders
     if (intent === "NEGATIVE") {
 
-       if (messageStore[msg.from]) {
-    messageStore[msg.from].optOut = true;
-  }
+      if (messageStore[msg.from]) {
+        messageStore[msg.from].optOut = true;
+      }
 
       await client.sendMessage(
         msg.from,
@@ -121,28 +111,29 @@ async function startServer() {
       return;
     }
 
-    // 🎯 ADMISSION INTENT
+    // 🎓 ADMISSION LINK
     if (intent === "ADMISSION") {
-      const id = Math.random().toString(36).substring(2, 7);
-clickMap[id] = msg.from;
+
+      const phone = msg.from.replace("@c.us","");
+
       await client.sendMessage(
-        
         msg.from,
 `🎓 *Admission Process*
 
 Complete your enrollment here 👇
-https://charter-temp.vercel.app/apply
+https://whatsappchatbot-81iy.onrender.com/a/${phone}
 
 ✔ Quick & simple process  
 ✔ Counselor support available  
 
-Need more help?:
+Need help?
 Call / WhatsApp: +91XXXXXXXXXX`
       );
+
       return;
     }
 
-    // ⭐ engagement scoring (+25)
+    // ⭐ engagement score (reply)
     tracker.trackReply(msg.from);
 
     if (messageStore[msg.from]) {
@@ -163,7 +154,6 @@ Call / WhatsApp: +91XXXXXXXXXX`
   });
 
 
-  // reconnect if disconnected
   client.on("disconnected", () => {
     console.log("Reconnecting...");
     client.initialize();
@@ -174,14 +164,12 @@ Call / WhatsApp: +91XXXXXXXXXX`
   });
 
   client.initialize();
-
 }
 
 
 // =============================
-// 🌐 START EXPRESS SERVER
+// START EXPRESS SERVER
 // =============================
-
 const PORT = process.env.PORT || 3000;
 
 app.listen(PORT, () => {

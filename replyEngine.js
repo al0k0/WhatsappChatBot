@@ -8,6 +8,7 @@ async function replyEngine(msg) {
   const courses = await loadCourses();
   const phone = msg.from.replace("@c.us","");
 
+
   // 👋 Greeting
   if (["hi","hello","hey"].includes(text)) {
     return `
@@ -64,8 +65,8 @@ ${list}
   read: false,
   delivered: false
 };
-const id = Math.random().toString(36).substring(2, 7);
-clickMap[id] = msg.from;
+// const id = Math.random().toString(36).substring(2, 7);
+// clickMap[id] = msg.from;
     return `
 🎓 *${matched.name}*
 
@@ -77,7 +78,8 @@ clickMap[id] = msg.from;
 ${matched.url}
 
 📝 *Apply Now:*  
-https://charter-temp.vercel.app/apply
+https://whatsappchatbot-81iy.onrender.com/a/${phone}
+
 🤝 Need help deciding?  
 https://wa.me/91XXXXXXXXXX
 `;
