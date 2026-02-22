@@ -1,4 +1,3 @@
-// load environment variables
 require("dotenv").config();
 
 const express = require("express");
@@ -17,46 +16,36 @@ const startReminder = require("./scheduler");
 
 
 // =============================
-// 🌐 WEBSITE VISIT TRACKING
+// WEBSITE CLICK TRACKING
 // =============================
 app.get("/w/:phone", (req, res) => {
+    console.log("ROUTE HIT");
 
-  const phone = req.params.phone;
-
-  console.log("🌐 Website click:", phone);
+  const phone = req.params.phone + "@c.us";
 
   tracker.trackClick(phone);
+
+  console.log("CLICK:", phone);
 
   res.redirect("https://charter-temp.vercel.app");
 });
 
-
 // =============================
-// 🎓 APPLY TRACKING
+// APPLY CLICK TRACKING
 // =============================
 app.get("/a/:phone", (req, res) => {
-
-  const phone = req.params.phone;
-
-  console.log("🎓 Apply click:", phone);
-
+  const phone = req.params.phone + "@c.us";
   tracker.trackClick(phone);
-
   res.redirect("https://charter-temp.vercel.app/apply");
 });
 
-
-// =============================
-// OPTIONAL ROOT CHECK
 // =============================
 app.get("/", (req, res) => {
   res.send("✅ Bot tracking server running");
 });
+// =============================
 
 
-// =============================
-// START SERVER LOGIC
-// =============================
 async function startServer() {
 
   client.on("ready", async () => {
@@ -69,7 +58,6 @@ async function startServer() {
     console.log("🚀 Starting campaign...");
     sendBulk();
 
-    // check new leads every 3 minutes
     setInterval(() => {
       console.log("🔍 Checking new leads...");
       sendBulk();
@@ -96,7 +84,7 @@ async function startServer() {
       intent = "ADMISSION";
     }
 
-    // ❌ NEGATIVE → stop reminders
+    // ❌ stop reminders
     if (intent === "NEGATIVE") {
 
       if (messageStore[msg.from]) {
@@ -111,7 +99,7 @@ async function startServer() {
       return;
     }
 
-    // 🎓 ADMISSION LINK
+    // 🎓 admission link
     if (intent === "ADMISSION") {
 
       const phone = msg.from.replace("@c.us","");
@@ -133,20 +121,12 @@ Call / WhatsApp: +91XXXXXXXXXX`
       return;
     }
 
-    // ⭐ engagement score (reply)
+    // ⭐ reply engagement (count once per session)
     tracker.trackReply(msg.from);
-
-    if (messageStore[msg.from]) {
-      messageStore[msg.from].replied = true;
-    }
 
     try {
       const reply = await replyEngine(msg);
-
-      if (reply) {
-        await client.sendMessage(msg.from, reply);
-      }
-
+      if (reply) await client.sendMessage(msg.from, reply);
     } catch (err) {
       console.log("Reply error:", err.message);
     }
@@ -167,8 +147,6 @@ Call / WhatsApp: +91XXXXXXXXXX`
 }
 
 
-// =============================
-// START EXPRESS SERVER
 // =============================
 const PORT = process.env.PORT || 3000;
 

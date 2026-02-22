@@ -1,5 +1,5 @@
-const messageStore = require("./services/messageStore");
-const engagementTracker = require("./services/engagementTracker");
+const store = require("./services/messageStore");
+const tracker = require("./services/engagementTracker");
 
 function trackStatus(client) {
 
@@ -8,24 +8,17 @@ function trackStatus(client) {
     if (!msg.to || msg.to.includes("@g.us")) return;
 
     const user = msg.to;
+    const users = store.getStore();
 
-    if (!messageStore[user]) return;
+    if (!users[user]) return;
 
-    // 📦 Delivered
-    if (ack === 2) {
-      messageStore[user].delivered = true;
-      engagementTracker.trackDelivered(user);
-      console.log("📦 Delivered →", user);
-    }
-
-    // 👀 Read
     if (ack === 3) {
-      messageStore[user].read = true;
 
-      // ⭐ reset timer when user reads
-      messageStore[user].lastSent = Date.now();
+      tracker.trackRead(user);
 
-      engagementTracker.trackRead(user);
+      store.updateUser(user, {
+        lastSent: Date.now()
+      });
 
       console.log("👀 Read →", user);
     }

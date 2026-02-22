@@ -1,75 +1,76 @@
 const cron = require("node-cron");
 const client = require("./bot");
-const messageStore = require("./services/messageStore");
 const MessageMedia = require("whatsapp-web.js").MessageMedia;
 const tracker = require("./services/engagementTracker");
-const clickMap = require("./services/clickMap");
-// ✅ load poster once (performance)
+const store = require("./services/messageStore");
+const generateFollowup = require("./services/aiFollowup");
+
 const poster = MessageMedia.fromFilePath("./poster.jpeg");
 
 function startReminder() {
 
-  // runs every minute (change to */2 for production)
   cron.schedule("* * * * *", async () => {
-console.log("⭐ Avg Engagement:", tracker.getAverageScore(), "/ 10");    
-const hour = new Date().getHours();
 
-    // 🌙 avoid sending late night reminders
-    // if (hour >= 23 || hour < 8) return;
-
-    console.log("⏰ Checking follow-ups...");
-
+    const users = store.getStore();
     const now = Date.now();
 
-    for (let user in messageStore) {
+    for (let user in users) {
 
-      const s = messageStore[user];
+      const s = users[user];
+      const diff = now - s.lastSent;
+      if (diff < 60 * 1000) continue;
 
-      // safety checks
-      if (!s) continue;
-if (s.optOut === true) continue;
-      if (s.reminderCount >= 1) continue; // send only once
+      const status = tracker.getStatus(user);
 
-      // wait time (TEST = 1 min)
-      if (now - s.lastSent < 60000) continue;
+      const seen = status?.read;
+      const question = status?.lastQuestion;
+      const course = status?.courseName || "the program";
 
-      try {
-// const id = Math.random().toString(36).substring(2, 7);
-// clickMap[id] = user;
-        const caption = `
-⏰ *Admissions closing soon*
+      let caption;
 
-You showed interest in *${s.course || "our career-focused programs"}*.
+      // ===== SESSION 1 → 2 =====
+      if (s.session === 1) {
 
-🎯 Better chances in current round  
-🎓 Scholarship opportunities available  
+        const context = question
+          ? `User asked: ${question}`
+          : seen
+          ? "User saw message but did not respond"
+          : "User may have missed the previous message";
 
-📅 Seats are filling fast.
-
-🟢 *Apply Now:*  
-https://whatsappchatbot-81iy.onrender.com/a/${phone}
-
-📞 Need guidance?  
-+91XXXXXXXXXX
-`;
+        caption = await generateFollowup(context, course, user);
 
         await client.sendMessage(user, poster, { caption });
 
-        tracker.trackSent(user);
-
-        // update tracking
-        s.reminderCount++;
-        s.lastSent = now;
-
-        console.log("🚨 Urgency reminder sent →", user);
-
-      } catch (err) {
-        console.log("Reminder error:", err.message);
+        tracker.completeSession(user);
+        store.updateUser(user, { session: 2, lastSent: now });
       }
+
+      // ===== SESSION 2 → 3 =====
+      else if (s.session === 2) {
+
+        const context = question
+          ? `User showed interest in: ${question}`
+          : "Final reminder to respond";
+
+        caption = await generateFollowup(context, course, user);
+
+        await client.sendMessage(user, poster, { caption });
+
+        tracker.completeSession(user);
+        store.updateUser(user, { session: 3, lastSent: now });
+      }
+
+      // ===== FINAL =====
+      else {
+        tracker.completeSession(user);
+        store.deleteUser(user);
+        continue;
+      }
+
+      console.log("Sent session", s.session + 1, "to", user);
     }
 
   });
-
 }
 
 module.exports = startReminder;

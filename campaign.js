@@ -1,20 +1,18 @@
 require("dotenv").config();
 const client = require("./bot");
 const MessageMedia = require("whatsapp-web.js").MessageMedia;
-const messageStore = require("./services/messageStore");
 const tracker = require("./services/engagementTracker");
 const generateIntro = require("./services/generateIntro");
-
 const { getNewLeads, markSent } = require("./services/sheetServices");
+const store = require("./services/messageStore");
 
 function delay() {
-  return Math.floor(Math.random() * 4000) + 6000; // 6–10 sec
+  return Math.floor(Math.random() * 4000) + 6000;
 }
 
 async function sendBulk() {
 
   const poster = MessageMedia.fromFilePath("./poster.jpeg");
-
   const leads = await getNewLeads();
 
   if (!leads.length) {
@@ -30,7 +28,6 @@ async function sendBulk() {
 
     try {
 
-      // ⭐ generate unique intro
       let msg = await generateIntro();
 
       if (!msg || msg.length < 20) {
@@ -38,27 +35,19 @@ async function sendBulk() {
 Reply YES to know more.`;
       }
 
-      msg = msg
-        .replace(/["']/g, "")
-        .replace(/Here's.*message:/i, "")
-        .trim();
+      msg = msg.replace(/["']/g, "")
+               .replace(/Here's.*message:/i, "")
+               .trim();
 
       await client.sendMessage(user, poster, { caption: msg });
 
-      tracker.trackSent(user);
+      // ✅ start session tracking (persistent)
+      store.setUser(user, {
+        session: 1,
+        lastSent: Date.now()
+      });
 
-      // reminder tracking state
-      messageStore[user] = {
-        sent: true,
-        delivered: false,
-        read: false,
-        replied: false,
-        reminderCount: 0,
-        lastSent: Date.now(),
-        firstSent: Date.now()
-      };
-
-      await markSent(row);   // ✅ mark as sent in sheet
+      await markSent(row);
 
       console.log("Sent:", user);
 
@@ -70,4 +59,4 @@ Reply YES to know more.`;
   }
 }
 
-module.exports = {sendBulk, messageStore};
+module.exports = { sendBulk };

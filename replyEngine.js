@@ -1,40 +1,37 @@
 const loadCourses = require("./services/dataStore");
 const matchCourse = require("./services/matchCourse");
 const messageStore = require("./services/messageStore");
-const clickMap = require("./services/clickMap");
+const tracker = require("./services/engagementTracker");   // ⭐ ADD
+
 async function replyEngine(msg) {
 
-  const text = msg.body.toLowerCase().trim();
+  const text = msg.body.trim().toLowerCase();
   const courses = await loadCourses();
   const phone = msg.from.replace("@c.us","");
 
+  // ⭐ SAVE LAST QUESTION
+  tracker.saveLastQuestion(msg.from, text);
 
   // 👋 Greeting
   if (["hi","hello","hey"].includes(text)) {
-    return `
-👋 Hi!
+    return `👋 Hi!
 
 Looking to build job-ready skills?
 
 I can help you choose the right course 🙂
 
-Reply *YES* to explore programs.
-`;
+Reply *YES* to explore programs.`;
   }
 
   // 📚 Show courses
-  if (/^yes$/i.test(text)) {
+  if (text === "yes") {
 
     messageStore[msg.from] = {
       course: null,
-      replied: false,
-      reminderCount: 0,
-      lastSent: Date.now(),
-      read: false,
-      delivered: false
+      lastSent: Date.now()
     };
 
-    if (!courses || courses.length === 0) {
+    if (!courses?.length) {
       return "⚙ Courses are being updated. Please try again shortly 🙂";
     }
 
@@ -42,13 +39,11 @@ Reply *YES* to explore programs.
       .map((c, i) => `${i + 1}️⃣ *${c.name}*`)
       .join("\n");
 
-    return `
-📚 *Available Programs*
+    return `📚 *Available Programs*
 
 ${list}
 
-✨ Reply with the *course name* to get full details.
-`;
+✨ Reply with the *course name* to get full details.`;
   }
 
   // 🎓 Course selected
@@ -56,19 +51,13 @@ ${list}
 
   if (matched) {
 
-   messageStore[msg.from] = {
-  ...(messageStore[msg.from] || {}),
-  course: matched.name,
-  replied: false,
-  reminderCount: 0,
-  lastSent: Date.now(),
-  read: false,
-  delivered: false
-};
-// const id = Math.random().toString(36).substring(2, 7);
-// clickMap[id] = msg.from;
-    return `
-🎓 *${matched.name}*
+    messageStore[msg.from] = {
+      ...(messageStore[msg.from] || {}),
+      course: matched.name,
+      lastSent: Date.now()
+    };
+
+    return `🎓 *${matched.name}*
 
 ✅ Industry-relevant skills  
 ✅ Hands-on practical training  
@@ -81,15 +70,12 @@ ${matched.url}
 https://whatsappchatbot-81iy.onrender.com/a/${phone}
 
 🤝 Need help deciding?  
-https://wa.me/91XXXXXXXXXX
-`;
+https://wa.me/91XXXXXXXXXX`;
   }
 
-  return `
-🙂 I can help you explore career programs.
+  return `🙂 I can help you explore career programs.
 
-Reply *YES* to view courses.
-`;
+Reply *YES* to view courses.`;
 }
 
 module.exports = replyEngine;
