@@ -20,6 +20,7 @@ function init(phone) {
       replied: false,
       clicked: false,
       score: 0,
+      finalScore: 0,
       level: "COLD"
     };
     save(data);
@@ -30,36 +31,48 @@ function init(phone) {
 
 function trackRead(phone) {
   const data = init(phone);
+
   if (!data[phone].read) {
     data[phone].read = true;
     save(data);
+
+    console.log("\n👀 READ EVENT");
+    console.log("User:", phone);
   }
 }
 
 function trackReply(phone) {
   const data = init(phone);
+
   if (!data[phone].replied) {
     data[phone].replied = true;
     save(data);
+
+    console.log("\n💬 REPLY EVENT");
+    console.log("User:", phone);
   }
 }
 
 function trackClick(phone) {
   const data = init(phone);
+
   if (!data[phone].clicked) {
     data[phone].clicked = true;
     save(data);
+
+    console.log("\n🌐 CLICK EVENT");
+    console.log("User:", phone);
   }
 }
 
-function trackCourseView(phone, course){
+function trackCourseView(phone, course) {
   const data = init(phone);
   data[phone].courseViewed = true;
   data[phone].courseName = course;
   save(data);
 }
 
-function saveLastQuestion(phone, text){
+function saveLastQuestion(phone, text) {
   const data = init(phone);
   data[phone].lastQuestion = text;
   save(data);
@@ -75,35 +88,51 @@ function completeSession(phone) {
   if (u.replied) sessionScore += 11;
   if (u.clicked) sessionScore += 11;
 
- u.score += sessionScore;
-u.finalScore = Math.round(u.score / 10);
+  u.score += sessionScore;
 
+  // convert to /10 scale
+  u.finalScore = Math.round(u.score / 10);
+
+  // level based on finalScore
+  u.level =
+    u.finalScore >= 8 ? "HOT" :
+    u.finalScore >= 5 ? "WARM" :
+    "COLD";
+
+  console.log(`
+📊 USER ENGAGEMENT
+${phone}
+   session     : ${u.session}
+   read        : ${u.read}
+   replied     : ${u.replied}
+   clicked     : ${u.clicked}
+   sessionScore: ${sessionScore}
+   totalScore  : ${u.score}
+   finalScore  : ${u.finalScore}/10
+   level       : ${u.level}
+────────────────────────
+`);
+
+  // reset session flags
   u.read = false;
   u.replied = false;
   u.clicked = false;
 
   if (u.session < 3) {
     u.session++;
-  } else {
-    u.level =
-      u.score >= 8 ? "HOT" :
-      u.score >= 5 ? "WARM" :
-      "COLD";
   }
 
   save(data);
 }
 
-function scoreOutof10(phone){
+function scoreOutof10(phone) {
   const data = load();
   const user = data[phone];
-
-  if(!user) return 0;
-
-  return Math.round(user.score / 10);
+  if (!user) return 0;
+  return user.finalScore || 0;
 }
 
-function getStatus(phone){
+function getStatus(phone) {
   const data = load();
   return data[phone] || null;
 }
