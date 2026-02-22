@@ -1,4 +1,3 @@
-const { executablePath } = require("puppeteer");
 const { Client, LocalAuth } = require("whatsapp-web.js");
 
 const client = new Client({
@@ -6,7 +5,6 @@ const client = new Client({
 
   puppeteer: {
     headless: true,
-    executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || undefined,
     args: [
       "--no-sandbox",
       "--disable-setuid-sandbox",
