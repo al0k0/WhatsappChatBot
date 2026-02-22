@@ -50,7 +50,6 @@ async function startServer() {
 
   client.on("ready", async () => {
 
-    console.log("✅ Bot Ready");
 
     trackStatus(client);
     startReminder();
